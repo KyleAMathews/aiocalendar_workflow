@@ -1,0 +1,352 @@
+<?php
+
+define("ALUMNI_TYPE", 1);
+define("ACADEMIC_TYPE", 2);
+define("CONFERENCE_TYPE", 3);
+define("DEVOTIONAL_TYPE", 4);
+define("EVENTS_TYPE", 5);
+define("FINE_ARTS_TYPE", 6);
+define("SPORTS_TYPE", 7);
+define("DRAFT_STATE", 8);
+define("REVIEW_STATE", 9);
+define("APPROVE_STATE", 10);
+define("PUBLISHED_STATE", 11);
+define("EXPIRED_STATE", 12);
+define("EVENT_STATE_VOCAB", 2);
+define("EVENT_TYPE_VOCAB", 1);
+define("ROLE_ADMIN", 3);
+define("ROLE_ALUMNI_APPROVER", 7);
+define("ROLE_ACADEMIC_APPROVER", 5);
+define("ROLE_CONFERENCES_APPROVER", 9);
+define("ROLE_DEVOTIONALS_APPROVER", 11);
+define("ROLE_EVENTS_APPROVER", 12);
+define("ROLE_FINE_ARTS_APPROVER", 14);
+define("ROLE_SPORTS_APPROVER", 17);
+
+include_once('aiocalendar_workflow.features.inc');
+
+/*
+ * Implementation of hook_init().
+ */
+function aiocalendar_workflow_init() {
+  drupal_add_js(drupal_get_path('module', 'aiocalendar_workflow') . "/aiocalendar_workflow.js");  
+}
+
+// Hook into views and restrict access by views to the workflows
+function aiocalendar_workflow_views_query_alter(&$view, &$query) {
+  if($view->name == 'workflows') {
+    global $user;
+    
+    // This is super hackish... but whatever.
+    $event_types = array(
+      '1' => 0,
+      '2' => 0,
+      '3' => 0,
+      '4' => 0,
+      '5' => 0,
+      '6' => 0,
+      '7' => 0,
+    );
+    // If user is an Admin.
+    if ($user->uid == 1 || $user->roles['3']) {
+      //dpm("user is all powerful and can see all, we'll just return now");
+      return;
+    }
+    
+    // If user has the Academic Approver role.
+    if ($user->roles['5'] || $user->roles['4']) {
+      $event_types['2'] = ACADEMIC_TYPE;
+    }
+
+    // If user has the Alumni Approver role.
+    if ($user->roles['7'] || $user->roles['6']) {
+      $event_types['1'] = ALUMNI_TYPE;
+    }
+    
+    // If user has the Conferences Approver role.
+    if ($user->roles['9'] || $user->roles['8']) {
+      $event_types['3'] = CONFERENCE_TYPE;
+    }
+    
+    // If user has the Devotionals Approver role.
+    if ($user->roles['11'] || $user->roles['10']) {
+      $event_types['4'] = DEVOTIONAL_TYPE;
+    }
+    
+    // If user has the Events Approver role.
+    if ($user->roles['12'] || $user->roles['13']) {
+      $event_types['5'] = EVENTS_TYPE;
+    }
+    
+    // If user has the Fine Arts Approver role.
+    if ($user->roles['14'] || $user->roles['15']) {
+      $event_types['6'] = FINE_ARTS_TYPE;
+    }
+    
+    // If user has the Sports Approver role.
+    if ($user->roles['17'] || $user->roles['16']) {
+      $event_types['7'] = SPORTS_TYPE;
+    }
+    
+    $cur_view = $view->display[$view->current_display]->display_title;
+    //dpm($cur_view);
+      
+    if ($cur_view == "All") {
+      
+    }
+    //dpm($event_types);
+    //dpm($user->roles['17']);
+    foreach ($query->where[0]['args'] as $k => $v) {
+      if (in_array($v, array_keys($event_types))) {
+        $query->where[0]['args'][$k] = $event_types[$v];
+      }
+    }
+    
+    $query->groupby = array('nid');
+    
+    //dpm($view);
+    //dpm($user);
+    //dpm($query);
+  }
+}
+
+
+// Workflow Actions.
+/**
+* Implementation of hook_action_info().
+*/
+function aiocalendar_workflow_action_info() {
+  return array(
+    'aiocalendar_workflow_set_to_review_action' => array(
+      'description' => t('Set event(s) to review and alert reviewers'),
+      'type' => 'node',
+      'configurable' => FALSE,
+      'hooks' => array(
+        'any' => TRUE,
+      ),
+    ),
+    'aiocalendar_workflow_set_to_approve_action' => array(
+      'description' => t('Approve event(s) and alert Publishers'),
+      'type' => 'node',
+      'configurable' => FALSE,
+      'hooks' => array(
+        'any' => TRUE,
+      ),
+    ),
+    'aiocalendar_workflow_publish_event_action' => array(
+      'description' => t('Publish event(s)'),
+      'type' => 'node',
+      'configurable' => FALSE,
+      'hooks' => array(
+        'any' => TRUE,
+      ),
+    ),
+    'aiocalendar_workflow_set_to_expire_action' => array(
+      'description' => t('Expire event(s)'),
+      'type' => 'node',
+      'configurable' => FALSE,
+      'hooks' => array(
+        'any' => TRUE,
+      ),
+    ),
+    'aiocalendar_workflow_set_to_draft_action' => array(
+      'description' => t('Set event(s) to draft and alert the event creator'),
+      'type' => 'node',
+      'configurable' => FALSE,
+      'hooks' => array(
+        'any' => TRUE,
+      ),
+    ),    
+  );
+}
+
+function aiocalendar_workflow_set_to_review_action(&$object, $context = array()) {
+  //dpm($object);
+  if (isset($object->nid)) {
+    $nid = $object->nid;
+  }
+  
+  $event_type = _aiocalendar_workflow_change_event_state($object, REVIEW_STATE);
+
+  // Make sure node is unpublished
+  db_query("UPDATE {node} SET status = 0 WHERE nid = %d", $object->nid);
+  
+  // Record a message noting the action taken.
+  watchdog('action', 'Change state of event (%title) to Review', array('%title' => check_plain($object->title)));
+  
+  // Send emails to people with the correct role.
+  $subject = "New BYU Calendar Events to Review";
+  $body = "Review events at http://calendar.byu.edu/workflow/review";
+  _aiocalendar_workflow_send_email_notification($object, $event_type, REVIEW_STATE, $subject, $body);
+}
+
+function aiocalendar_workflow_set_to_approve_action(&$object, $context = array()) {
+  //dpm($object);
+  if (isset($object->nid)) {
+    $nid = $object->nid;
+  }
+  
+  $event_type = _aiocalendar_workflow_change_event_state($object, APPROVE_STATE);
+  
+  // Make sure node is unpublished
+  db_query("UPDATE {node} SET status = 0 WHERE nid = %d", $object->nid);
+  
+  // Record a message noting the action taken.
+  watchdog('action', 'Change state of event (%title) to Approve', array('%title' => check_plain($object->title)));
+  
+  // Send emails to people with the correct role.
+  $subject = 'New BYU Calendar Events to Approve';
+  $body = "Approve events at http://calendar.byu.edu/workflow/approve";
+  _aiocalendar_workflow_send_email_notification($object, $event_type, APPROVE_STATE, $subject, $body);
+}
+
+function aiocalendar_workflow_publish_event_action(&$object, $context = array()) {
+  //dpm($object);
+  if (isset($object->nid)) {
+    $nid = $object->nid;
+  }
+  
+  $event_type = _aiocalendar_workflow_change_event_state($object, PUBLISHED_STATE);
+  
+  // Publish node.
+  db_query("UPDATE {node} SET status = 1 WHERE nid = %d", $object->nid);
+  
+  // Record a message noting the action taken.
+  watchdog('action', 'Published event: %title', array('%title' => check_plain($object->title)));
+}
+
+function aiocalendar_workflow_set_to_expire_action(&$object, $context = array()) {
+  //dpm($object);
+  if (isset($object->nid)) {
+    $nid = $object->nid;
+  }
+  
+  $event_type = _aiocalendar_workflow_change_event_state($object, EXPIRED_STATE);
+  
+  // Unpublish node.
+  db_query("UPDATE {node} SET status = 0 WHERE nid = %d", $object->nid);
+  
+  // Record a message noting the action taken.
+  watchdog('action', 'Unpublished event: %title', array('%title' => check_plain($object->title)));  
+}
+
+function aiocalendar_workflow_set_to_draft_action(&$object, $context = array()) {
+  //dpm($object);
+  global $user;
+  
+  if (isset($object->nid)) {
+    $nid = $object->nid;
+  }
+  
+  $event_type = _aiocalendar_workflow_change_event_state($object, DRAFT_STATE);
+
+  // Make sure node is unpublished
+  db_query("UPDATE {node} SET status = 0 WHERE nid = %d", $object->nid);
+  
+  // Record a message noting the action taken.
+  watchdog('action', 'Changed state of event (%title) to draft', array('%title' => check_plain($object->title)));
+  
+  // Send emails to people with the correct role.
+  $subject = 'Your calendar event wasn\'t approved.';
+  $body = "Your event: " . $object->title . " has not been approved.
+      See http://calendar.byu.edu/workflow/draft to edit your event.
+      Contact " . $user->name . " at " . $user->mail . " for more details.";
+  _aiocalendar_workflow_send_email_notification($object, $event_type, DRAFT_STATE, $subject, $body);
+}
+
+// Determin which roles should receive an email for the state change if any.
+function aiocalendar_workflow_role_emails($new_state, $event_type, $node) {
+  // For now, only admins can publish events.
+  if ($new_state == APPROVE_STATE) {
+    return _aiocalendar_workflow_emails_for_role(ROLE_ADMIN);
+  }
+  
+  // Mapping here is butt ugly. Replace w/ an admin UI sometime.
+  if ($new_state == REVIEW_STATE || $new_state == DRAFT_STATE) {
+    switch ($event_type) {
+      case ALUMNI_TYPE:
+        return _aiocalendar_workflow_emails_for_role(ROLE_ALUMNI_APPROVER);
+        break;
+      case ACADEMIC_TYPE:
+        return _aiocalendar_workflow_emails_for_role(ROLE_ACADEMIC_APPROVER);
+        break;
+      case CONFERENCE_TYPE:
+        return _aiocalendar_workflow_emails_for_role(ROLE_CONFERENCES_APPROVER);
+        break;
+      case DEVOTIONAL_TYPE:
+        return _aiocalendar_workflow_emails_for_role(ROLE_DEVOTIONALS_APPROVER);
+        break;
+      case EVENTS_TYPE:
+        return _aiocalendar_workflow_emails_for_role(ROLE_EVENTS_APPROVER);
+        break;
+      case FINE_ARTS_TYPE:
+        return _aiocalendar_workflow_emails_for_role(ROLE_FINE_ARTS_APPROVER);
+        break;
+      case SPORTS_TYPE:
+        return _aiocalendar_workflow_emails_for_role(ROLE_SPORTS_APPROVER);
+        break;
+    }
+  }
+}
+
+function _aiocalendar_workflow_emails_for_role($role) {
+  $result = db_query("SELECT uid FROM {users_roles} WHERE rid = %d", $role);
+  
+  $uids = array();
+  
+  while ($data = db_fetch_array($result)) {
+    $uids[] = $data['uid'];
+  }
+  
+  $emails = "";
+  foreach ($uids as $uid) {
+    $user = user_load(array('uid' => $uid));
+    $emails .= $user->mail . ", ";
+  }
+  
+  return trim($emails, ', ');  
+}
+
+function _aiocalendar_workflow_change_event_state($object, $new_state) {
+  // Update state in database to review.
+  // Figure out what state the node is in right now if any so we can delete it
+  // from the term_node table.
+  $state = 0;
+  $event_type = 0;
+  foreach ($object->taxonomy as $tid) {
+    if ($tid->vid == EVENT_STATE_VOCAB) {
+      $state = $tid->tid;
+    }
+    if ($tid->vid == EVENT_TYPE_VOCAB) {
+      $event_type = $tid->tid;
+    }
+  }
+  
+  // First delete the old term record. If there wasn't an existing termID, this
+  // query will do nothing.
+  db_query("DELETE FROM term_node WHERE vid = %d AND tid = %d", $object->vid, $state);
+  
+  // Then write the new one term.
+  $record = array (
+    'nid' => $object->nid,
+    'vid' => $object->vid,
+    'tid' => $new_state,
+  );
+  drupal_write_record('term_node', $record);
+  
+  return $event_type;
+}
+
+function _aiocalendar_workflow_send_email_notification($object, $event_type, $new_state, $subject, $body) {
+  $message = array(
+    'id' => 'aiocalendar_workflow_review',
+    'to' => aiocalendar_workflow_role_emails(REVIEW_STATE, $event_type, $object),
+    'subject' => $subject,
+    'body' => $body,
+    'headers' => array(),
+  );
+  
+  // We'll just use drupal_mail_send instead of drupal_mail because we other modules
+  // don't need to modify ours.
+  drupal_mail_send($message);
+}
