@@ -53,37 +53,37 @@ function aiocalendar_workflow_views_query_alter(&$view, &$query) {
       return;
     }
     
-    // If user has the Academic Approver role.
+    // If user has the Academic role.
     if ($user->roles['5'] || $user->roles['4']) {
       $event_types['2'] = ACADEMIC_TYPE;
     }
 
-    // If user has the Alumni Approver role.
+    // If user has the Alumni role.
     if ($user->roles['7'] || $user->roles['6']) {
       $event_types['1'] = ALUMNI_TYPE;
     }
     
-    // If user has the Conferences Approver role.
+    // If user has the Conferences role.
     if ($user->roles['9'] || $user->roles['8']) {
       $event_types['3'] = CONFERENCE_TYPE;
     }
     
-    // If user has the Devotionals Approver role.
+    // If user has the Devotionals role.
     if ($user->roles['11'] || $user->roles['10']) {
       $event_types['4'] = DEVOTIONAL_TYPE;
     }
     
-    // If user has the Events Approver role.
+    // If user has the Events role.
     if ($user->roles['12'] || $user->roles['13']) {
       $event_types['5'] = EVENTS_TYPE;
     }
     
-    // If user has the Fine Arts Approver role.
+    // If user has the Fine Arts role.
     if ($user->roles['14'] || $user->roles['15']) {
       $event_types['6'] = FINE_ARTS_TYPE;
     }
     
-    // If user has the Sports Approver role.
+    // If user has the Sports role.
     if ($user->roles['17'] || $user->roles['16']) {
       $event_types['7'] = SPORTS_TYPE;
     }
@@ -118,7 +118,7 @@ function aiocalendar_workflow_views_query_alter(&$view, &$query) {
 function aiocalendar_workflow_action_info() {
   return array(
     'aiocalendar_workflow_set_to_review_action' => array(
-      'description' => t('Set event(s) to review and alert reviewers'),
+      'description' => t('Set event(s) to review and alert Reviewer(s)'),
       'type' => 'node',
       'configurable' => FALSE,
       'hooks' => array(
@@ -150,7 +150,7 @@ function aiocalendar_workflow_action_info() {
       ),
     ),
     'aiocalendar_workflow_set_to_draft_action' => array(
-      'description' => t('Set event(s) to draft and alert the event creator'),
+      'description' => t('Set event(s) to draft and alert the Author(s)'),
       'type' => 'node',
       'configurable' => FALSE,
       'hooks' => array(
@@ -324,7 +324,7 @@ function _aiocalendar_workflow_change_event_state($object, $new_state) {
   
   // First delete the old term record. If there wasn't an existing termID, this
   // query will do nothing.
-  db_query("DELETE FROM term_node WHERE vid = %d AND tid = %d", $object->vid, $state);
+  db_query("DELETE FROM {term_node} WHERE vid = %d AND tid = %d", $object->vid, $state);
   
   // Then write the new one term.
   $record = array (

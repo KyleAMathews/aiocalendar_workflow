@@ -215,6 +215,8 @@ function _aiocalendar_workflow_views_default_views() {
     'type' => 'none',
   ));
   $handler->override_option('use_ajax', TRUE);
+  $handler->override_option('items_per_page', 50);
+  $handler->override_option('use_pager', 'mini');
   $handler->override_option('style_plugin', 'bulk');
   $handler->override_option('style_options', array(
     'grouping' => '',
@@ -395,6 +397,26 @@ function _aiocalendar_workflow_views_default_views() {
       'reduce_duplicates' => 0,
     ),
   ));
+  $handler->override_option('access', array(
+    'type' => 'role',
+    'role' => array(
+      '5' => 5,
+      '4' => 4,
+      '3' => 3,
+      '7' => 7,
+      '6' => 6,
+      '9' => 9,
+      '8' => 8,
+      '11' => 11,
+      '10' => 10,
+      '12' => 12,
+      '13' => 13,
+      '14' => 14,
+      '15' => 15,
+      '17' => 17,
+      '16' => 16,
+    ),
+  ));
   $handler->override_option('path', 'workflow/draft');
   $handler->override_option('menu', array(
     'type' => 'tab',
@@ -502,6 +524,19 @@ function _aiocalendar_workflow_views_default_views() {
       ),
       'relationship' => 'none',
       'reduce_duplicates' => 0,
+    ),
+  ));
+  $handler->override_option('access', array(
+    'type' => 'role',
+    'role' => array(
+      '5' => 5,
+      '3' => 3,
+      '7' => 7,
+      '9' => 9,
+      '11' => 11,
+      '12' => 12,
+      '14' => 14,
+      '17' => 17,
     ),
   ));
   $handler->override_option('path', 'workflow/review');
@@ -613,6 +648,12 @@ function _aiocalendar_workflow_views_default_views() {
       'reduce_duplicates' => 0,
     ),
   ));
+  $handler->override_option('access', array(
+    'type' => 'role',
+    'role' => array(
+      '3' => 3,
+    ),
+  ));
   $handler->override_option('path', 'workflow/approve');
   $handler->override_option('menu', array(
     'type' => 'tab',
@@ -720,6 +761,26 @@ function _aiocalendar_workflow_views_default_views() {
       ),
       'relationship' => 'none',
       'reduce_duplicates' => 0,
+    ),
+  ));
+  $handler->override_option('access', array(
+    'type' => 'role',
+    'role' => array(
+      '5' => 5,
+      '4' => 4,
+      '3' => 3,
+      '7' => 7,
+      '6' => 6,
+      '9' => 9,
+      '8' => 8,
+      '11' => 11,
+      '10' => 10,
+      '12' => 12,
+      '13' => 13,
+      '14' => 14,
+      '15' => 15,
+      '17' => 17,
+      '16' => 16,
     ),
   ));
   $handler->override_option('path', 'workflow/expired');
@@ -839,7 +900,7 @@ function _aiocalendar_workflow_views_default_views() {
         'html' => 0,
       ),
       'type' => 'separator',
-      'separator' => ', ',
+      'separator' => ' - ',
       'empty' => '',
       'link_to_taxonomy' => 0,
       'limit' => 1,
@@ -849,6 +910,43 @@ function _aiocalendar_workflow_views_default_views() {
       ),
       'exclude' => 0,
       'id' => 'tid',
+      'table' => 'term_node',
+      'field' => 'tid',
+      'override' => array(
+        'button' => 'Use default',
+      ),
+      'relationship' => 'none',
+    ),
+    'tid_1' => array(
+      'label' => 'Event Type',
+      'alter' => array(
+        'alter_text' => 0,
+        'text' => '',
+        'make_link' => 0,
+        'path' => '',
+        'link_class' => '',
+        'alt' => '',
+        'prefix' => '',
+        'suffix' => '',
+        'help' => '',
+        'trim' => 0,
+        'max_length' => '',
+        'word_boundary' => 1,
+        'ellipsis' => 1,
+        'strip_tags' => 0,
+        'html' => 0,
+      ),
+      'type' => 'separator',
+      'separator' => ', ',
+      'empty' => '',
+      'link_to_taxonomy' => 0,
+      'limit' => 1,
+      'vids' => array(
+        '1' => 1,
+        '2' => 0,
+      ),
+      'exclude' => 0,
+      'id' => 'tid_1',
       'table' => 'term_node',
       'field' => 'tid',
       'override' => array(
@@ -965,6 +1063,26 @@ function _aiocalendar_workflow_views_default_views() {
       ),
       'relationship' => 'none',
       'reduce_duplicates' => 0,
+    ),
+  ));
+  $handler->override_option('access', array(
+    'type' => 'role',
+    'role' => array(
+      '5' => 5,
+      '4' => 4,
+      '3' => 3,
+      '7' => 7,
+      '6' => 6,
+      '9' => 9,
+      '8' => 8,
+      '11' => 11,
+      '10' => 10,
+      '12' => 12,
+      '13' => 13,
+      '14' => 14,
+      '15' => 15,
+      '17' => 17,
+      '16' => 16,
     ),
   ));
   $handler->override_option('path', 'workflow/all');
@@ -1288,6 +1406,26 @@ function _aiocalendar_workflow_views_default_views() {
         'button' => 'Use default',
       ),
       'relationship' => 'none',
+    ),
+  ));
+  $handler->override_option('access', array(
+    'type' => 'role',
+    'role' => array(
+      '5' => 5,
+      '4' => 4,
+      '3' => 3,
+      '7' => 7,
+      '6' => 6,
+      '9' => 9,
+      '8' => 8,
+      '11' => 11,
+      '10' => 10,
+      '12' => 12,
+      '13' => 13,
+      '14' => 14,
+      '15' => 15,
+      '17' => 17,
+      '16' => 16,
     ),
   ));
   $handler->override_option('style_plugin', 'views_json');
